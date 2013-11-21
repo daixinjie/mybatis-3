@@ -376,7 +376,7 @@ public class BindingTest {
     }
   }
 
-  @Ignore
+//  @Ignore
   @Test // issue #480
   public void shouldExecuteBoundSelectBlogUsingConstructorWithResultMapCollection() {
     SqlSession session = sqlSessionFactory.openSession();
