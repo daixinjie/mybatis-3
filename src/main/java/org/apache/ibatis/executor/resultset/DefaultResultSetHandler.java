@@ -813,7 +813,10 @@ public class DefaultResultSetHandler implements ResultSetHandler {
       }
       if (combinedKey != CacheKey.NULL_CACHE_KEY) nestedResultObjects.put(combinedKey, resultObject);
     }
-    return resultObject;
+    if (resultObject.object != null) {
+      return resultObject;
+    }
+    return null;
   }
 
   //
