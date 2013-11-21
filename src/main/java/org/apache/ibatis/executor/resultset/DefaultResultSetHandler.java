@@ -88,6 +88,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   
   private static class ObjectContainer {
     public Object object;
+    public MetaObject metaObject;
     public Map<ResultMapping, Object> constructorCollections = new HashMap<ResultMapping, Object>();
   }
   
@@ -261,7 +262,12 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   // HANDLE ROWS FOR SIMPLE RESULTMAP
   //
 
-  private void handleRowValues(ResultSetWrapper rsw, ResultMap resultMap, ResultHandler resultHandler, RowBounds rowBounds, ResultMapping parentMapping) throws SQLException {
+  private void handleRowValues(
+      ResultSetWrapper rsw, 
+      ResultMap resultMap, 
+      ResultHandler resultHandler, 
+      RowBounds rowBounds, 
+      ResultMapping parentMapping) throws SQLException {
     if (resultMap.hasNestedResultMaps()) {
       ensureNoRowBounds();
       checkResultHandler();
@@ -286,18 +292,26 @@ public class DefaultResultSetHandler implements ResultSetHandler {
     }
   } 
 
-  private void handleRowValuesForSimpleResultMap(ResultSetWrapper rsw, ResultMap resultMap, ResultHandler resultHandler, RowBounds rowBounds, ResultMapping parentMapping)
-      throws SQLException {
+  private void handleRowValuesForSimpleResultMap(ResultSetWrapper rsw,
+          ResultMap resultMap, 
+          ResultHandler resultHandler, 
+          RowBounds rowBounds,
+          ResultMapping parentMapping) 
+          throws SQLException {
     DefaultResultContext resultContext = new DefaultResultContext();
     skipRows(rsw.getResultSet(), rowBounds);
     while (shouldProcessMoreRows(rsw.getResultSet(), resultContext, rowBounds)) {
       ResultMap discriminatedResultMap = resolveDiscriminatedResultMap(rsw.getResultSet(), resultMap, null);
-      Object rowValue = getRowValue(rsw, discriminatedResultMap, null);
+      Object rowValue = getRowValue(rsw, discriminatedResultMap);
       storeObject(resultHandler, resultContext, rowValue, parentMapping, rsw.getResultSet());
     }
   }
 
-  private void storeObject(ResultHandler resultHandler, DefaultResultContext resultContext, Object rowValue, ResultMapping parentMapping, ResultSet rs) throws SQLException {
+  private void storeObject(ResultHandler resultHandler,
+        DefaultResultContext resultContext, 
+        Object rowValue,
+        ResultMapping parentMapping, 
+        ResultSet rs) throws SQLException {
     if (parentMapping != null) {
       linkToParent(rs, parentMapping, rowValue);
     } else {
@@ -330,7 +344,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   // GET VALUE FROM ROW FOR SIMPLE RESULT MAP
   //
 
-  private Object getRowValue(ResultSetWrapper rsw, ResultMap resultMap, CacheKey rowKey) throws SQLException {
+  private Object getRowValue(ResultSetWrapper rsw, ResultMap resultMap) throws SQLException {
     final ResultLoaderMap lazyLoader = instantiateResultLoaderMap();
     ObjectContainer container = createResultObject(rsw, resultMap, lazyLoader, null);
     Object resultObject = container.object;
@@ -575,6 +589,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
         if (objectFactory.isCollection(parameterType)) { // issue #101
           object = objectFactory.create(parameterType); 
           value.constructorCollections.put(constructorMapping, object);
+          // TODO, an empty collection is not a valid value
         } else {
           final ResultMap resultMap = configuration.getResultMap(constructorMapping.getNestedResultMapId());
           final ResultLoaderMap lazyLoader = instantiateResultLoaderMap();
@@ -586,7 +601,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
       }
       constructorArgTypes.add(parameterType);
       constructorArgs.add(object);
-      foundValues = value != null || foundValues;
+      foundValues = object != null || foundValues;
     }
     if (foundValues) {
       value.object = objectFactory.create(resultType, constructorArgTypes, constructorArgs);
